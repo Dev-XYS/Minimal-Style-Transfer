@@ -1,3 +1,4 @@
+import imageio
 import torch
 import torch.nn as nn
 import torchvision
@@ -195,8 +196,8 @@ class Solver(object):
             if (step+1) % self.log_step == 0:
                 print('Step [%d/%d], d_real_loss: %.4f, d_mnist_loss: %.4f, d_svhn_loss: %.4f, '
                       'd_fake_loss: %.4f, g_loss: %.4f' 
-                      %(step+1, self.train_iters, d_real_loss.data[0], d_mnist_loss.data[0], 
-                        d_svhn_loss.data[0], d_fake_loss.data[0], g_loss.data[0]))
+                      %(step+1, self.train_iters, d_real_loss.data.item(), d_mnist_loss.data.item(), 
+                        d_svhn_loss.item(), d_fake_loss.item(), g_loss.item()))
 
             # save the sampled images
             if (step+1) % self.sample_step == 0:
@@ -208,12 +209,12 @@ class Solver(object):
                 
                 merged = self.merge_images(mnist, fake_svhn)
                 path = os.path.join(self.sample_path, 'sample-%d-m-s.png' %(step+1))
-                scipy.misc.imsave(path, merged)
+                imageio.imsave(path, merged)
                 print ('saved %s' %path)
                 
                 merged = self.merge_images(svhn, fake_mnist)
                 path = os.path.join(self.sample_path, 'sample-%d-s-m.png' %(step+1))
-                scipy.misc.imsave(path, merged)
+                imageio.imsave(path, merged)
                 print ('saved %s' %path)
             
             if (step+1) % 5000 == 0:

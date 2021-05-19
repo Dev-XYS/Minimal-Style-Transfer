@@ -46,10 +46,10 @@ if __name__ == '__main__':
     
     # misc
     parser.add_argument('--mode', type=str, default='train')
-    parser.add_argument('--model_path', type=str, default='./models')
-    parser.add_argument('--sample_path', type=str, default='./samples')
-    parser.add_argument('--mnist_path', type=str, default='./mnist')
-    parser.add_argument('--svhn_path', type=str, default='./svhn')
+    parser.add_argument('--model_path', type=str, default='../output/models')
+    parser.add_argument('--sample_path', type=str, default='../output/samples')
+    parser.add_argument('--mnist_path', type=str, default='../data/yushuo/MNIST')
+    parser.add_argument('--svhn_path', type=str, default='../data/yushuo/The_Street_View_House_Numbers_Dataset')
     parser.add_argument('--log_step', type=int , default=10)
     parser.add_argument('--sample_step', type=int , default=500)
 
