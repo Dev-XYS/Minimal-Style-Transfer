@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
     # model hyper-parameters
-    parser.add_argument('--image_size', type=int, default=32)
+    parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--g_conv_dim', type=int, default=64)
     parser.add_argument('--d_conv_dim', type=int, default=64)
     parser.add_argument('--use_reconst_loss', required=True, type=str2bool)
@@ -48,10 +48,13 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='train')
     parser.add_argument('--model_path', type=str, default='../output/models')
     parser.add_argument('--sample_path', type=str, default='../output/samples')
-    parser.add_argument('--mnist_path', type=str, default='../data/yushuo/MNIST')
-    parser.add_argument('--svhn_path', type=str, default='../data/yushuo/The_Street_View_House_Numbers_Dataset')
+    parser.add_argument('--extract', type=str2bool, default='True')
+    parser.add_argument('--zip_path', type=str, default='../data/yushuo/Wash-Ink/wash-ink-figure.zip')
+    parser.add_argument('--extract_path', type=str, default='../output/data/')
+    parser.add_argument('--photo_path', type=str, default='../output/data/figure/trainA')
+    parser.add_argument('--washink_path', type=str, default='../output/data/figure/trainB')
     parser.add_argument('--log_step', type=int , default=10)
-    parser.add_argument('--sample_step', type=int , default=500)
+    parser.add_argument('--sample_step', type=int , default=100)
 
     config = parser.parse_args()
     print(config)

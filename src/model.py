@@ -23,7 +23,7 @@ class G12(nn.Module):
     def __init__(self, conv_dim=64):
         super(G12, self).__init__()
         # encoding blocks
-        self.conv1 = conv(1, conv_dim, 4)
+        self.conv1 = conv(3, conv_dim, 4)
         self.conv2 = conv(conv_dim, conv_dim*2, 4)
         
         # residual blocks
@@ -59,7 +59,7 @@ class G21(nn.Module):
         
         # decoding blocks
         self.deconv1 = deconv(conv_dim*2, conv_dim, 4)
-        self.deconv2 = deconv(conv_dim, 1, 4, bn=False)
+        self.deconv2 = deconv(conv_dim, 3, 4, bn=False)
         
     def forward(self, x):
         out = F.leaky_relu(self.conv1(x), 0.05)      # (?, 64, 16, 16)
@@ -76,7 +76,7 @@ class D1(nn.Module):
     """Discriminator for mnist."""
     def __init__(self, conv_dim=64, use_labels=False):
         super(D1, self).__init__()
-        self.conv1 = conv(1, conv_dim, 4, bn=False)
+        self.conv1 = conv(3, conv_dim, 4, bn=False)
         self.conv2 = conv(conv_dim, conv_dim*2, 4)
         self.conv3 = conv(conv_dim*2, conv_dim*4, 4)
         n_out = 11 if use_labels else 1
