@@ -38,7 +38,7 @@ if __name__ == '__main__':
     
     # training hyper-parameters
     parser.add_argument('--train_iters', type=int, default=40000)
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--beta1', type=float, default=0.5)
@@ -48,13 +48,11 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='train')
     parser.add_argument('--model_path', type=str, default='../output/models')
     parser.add_argument('--sample_path', type=str, default='../output/samples')
-    parser.add_argument('--extract', type=str2bool, default='True')
-    parser.add_argument('--zip_path', type=str, default='../data/yushuo/Wash-Ink/wash-ink-figure.zip')
-    parser.add_argument('--extract_path', type=str, default='../output/data/')
-    parser.add_argument('--photo_path', type=str, default='../output/data/figure/trainA')
-    parser.add_argument('--washink_path', type=str, default='../output/data/figure/trainB')
+    parser.add_argument('--photo_path', type=str, default='../data/yushuo/Wash-Ink/photo.gz')
+    parser.add_argument('--washink_path', type=str, default='../data/yushuo/Wash-Ink/washink.gz')
     parser.add_argument('--log_step', type=int , default=10)
     parser.add_argument('--sample_step', type=int , default=100)
+    parser.add_argument('--sample_count', type=int , default=16)
 
     config = parser.parse_args()
     print(config)

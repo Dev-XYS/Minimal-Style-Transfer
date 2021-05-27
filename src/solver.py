@@ -37,6 +37,7 @@ class Solver(object):
         self.sample_step = config.sample_step
         self.sample_path = config.sample_path
         self.model_path = config.model_path
+        self.sample_count = config.sample_count
         self.build_model()
         
     def build_model(self):
@@ -60,7 +61,7 @@ class Solver(object):
     
     def merge_images(self, sources, targets, k=10):
         _, _, h, w = sources.shape
-        row = int(np.sqrt(self.batch_size))
+        row = int(np.sqrt(self.batch_size * self.sample_count))
         merged = np.zeros([3, row*h, row*w*2])
         for idx, (s, t) in enumerate(zip(sources, targets)):
             i = idx // row
@@ -92,15 +93,15 @@ class Solver(object):
         iter_per_epoch = min(len(svhn_iter), len(mnist_iter))
         
         # fixed mnist and svhn for sampling
-        fixed_svhn = self.to_var(svhn_iter.next()[0])
-        fixed_mnist = self.to_var(mnist_iter.next()[0])
+        fixed_svhn = self.to_var(torch.cat([svhn_iter.next()[0] for _ in range(self.sample_count)]))
+        fixed_mnist = self.to_var(torch.cat([mnist_iter.next()[0] for _ in range(self.sample_count)]))
         
         # loss if use_labels = True
         criterion = nn.CrossEntropyLoss()
         
         for step in range(self.train_iters+1):
             # reset data_iter for each epoch
-            if (step+1) % iter_per_epoch == 0:
+            if step % iter_per_epoch == 0:
                 mnist_iter = iter(self.mnist_loader)
                 svhn_iter = iter(self.svhn_loader)
             
