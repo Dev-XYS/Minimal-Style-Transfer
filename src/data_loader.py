@@ -12,7 +12,7 @@ class PhotoDataset(torch.utils.data.Dataset):
     def __init__(self, images, transform):
         super(PhotoDataset, self).__init__()
         self.transform = transform
-        self.images = list(map(lambda x: x, images))
+        self.images = list(map(transform, images))
 
     def __getitem__(self, index):
         return self.images[index], 1
@@ -24,7 +24,7 @@ class WashInkDataset(torch.utils.data.Dataset):
     def __init__(self, images, transform):
         super(WashInkDataset, self).__init__()
         self.transform = transform
-        self.images = list(map(lambda x: x, images))
+        self.images = list(map(transform, images))
 
     def __getitem__(self, index):
         return self.images[index], 1
@@ -32,13 +32,25 @@ class WashInkDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.images)
 
+def get_images(path):
+    images = []
+    for p in os.listdir(path):
+        if p.endswith(".webp"):
+            continue
+        p = os.path.join(path, p)
+        images.append(Image.open(p).convert('RGB'))
+    return images
+
 def get_loader(config):
     """Builds and returns Dataloader for photo and washink dataset."""
 
-    photo_imgs = pickle.load(config.photo_path)
-    print('Loaded pickle file 1')
-    washink_imgs = pickle.load(config.washink_path)
-    print('Loaded pickle files')
+    # photo_imgs = pickle.load(config.photo_path)
+    # print('Loaded pickle file 1')
+    # washink_imgs = pickle.load(config.washink_path)
+    # print('Loaded pickle files')
+
+    photo_imgs = get_images(config.photo_path)
+    washink_imgs = get_images(config.washink_path)
 
     transform = transforms.Compose([
         transforms.Resize(config.image_size),

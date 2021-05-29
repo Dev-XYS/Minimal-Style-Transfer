@@ -228,3 +228,13 @@ class Solver(object):
                 torch.save(self.g21.state_dict(), g21_path)
                 torch.save(self.d1.state_dict(), d1_path)
                 torch.save(self.d2.state_dict(), d2_path)
+
+    def sample(self):
+        self.g12.load_state_dict(torch.load(os.path.join(self.model_path, 'g12.pkl'), map_location=torch.device('cpu')))
+        self.g21.load_state_dict(torch.load(os.path.join(self.model_path, 'g21.pkl'), map_location=torch.device('cpu')))
+        self.g12.eval()
+        self.g21.eval()
+        for i, (image, _) in enumerate(self.svhn_loader):
+            imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
+            fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))
+            imageio.imsave(os.path.join(self.sample_path, f'{i}.png'), fake)
