@@ -32,8 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--g_conv_dim', type=int, default=64)
     parser.add_argument('--d_conv_dim', type=int, default=64)
-    parser.add_argument('--use_reconst_loss', required=True, type=str2bool)
-    parser.add_argument('--use_labels', required=True, type=str2bool)
+    parser.add_argument('--use_reconst_loss', type=str2bool, default="True")
+    parser.add_argument('--use_labels', type=str2bool, default="False")
     parser.add_argument('--num_classes', type=int, default=10)
     
     # training hyper-parameters
@@ -46,10 +46,10 @@ if __name__ == '__main__':
     
     # misc
     parser.add_argument('--mode', type=str, default='train')
-    parser.add_argument('--model_path', type=str, default='../output/models')
-    parser.add_argument('--sample_path', type=str, default='../output/samples')
-    parser.add_argument('--photo_path', type=str, default='../data/yushuo/Wash-Ink/photo.gz')
-    parser.add_argument('--washink_path', type=str, default='../data/yushuo/Wash-Ink/washink.gz')
+    parser.add_argument('--model_path', type=str, default='/output/models')
+    parser.add_argument('--sample_path', type=str, default='/output/samples')
+    parser.add_argument('--photo_path', type=str, default='/data/shareelectrons/washink1/horse/trainA')
+    parser.add_argument('--washink_path', type=str, default='/data/shareelectrons/washink1/horse/trainB')
     parser.add_argument('--log_step', type=int , default=10)
     parser.add_argument('--sample_step', type=int , default=100)
     parser.add_argument('--sample_count', type=int , default=16)

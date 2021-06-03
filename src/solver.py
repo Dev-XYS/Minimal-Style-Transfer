@@ -234,6 +234,8 @@ class Solver(object):
         self.g21.load_state_dict(torch.load(os.path.join(self.model_path, 'g21.pkl'), map_location=torch.device('cpu')))
         self.g12.eval()
         self.g21.eval()
+        import IPython
+        IPython.embed()
         for i, (image, _) in enumerate(self.svhn_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
             fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))

@@ -1,56 +1,41 @@
 import numpy as np
 import os
-import compress_pickle as pickle
 import torch
-import zipfile
 from PIL import Image
-from torch.functional import split
-from torchvision import datasets
 from torchvision import transforms
 
 class PhotoDataset(torch.utils.data.Dataset):
-    def __init__(self, images, transform):
+    def __init__(self, paths, transform):
         super(PhotoDataset, self).__init__()
         self.transform = transform
-        self.images = list(map(transform, images))
+        self.paths = paths
 
     def __getitem__(self, index):
-        return self.images[index], 1
+        return self.transform(Image.open(self.paths[index]).convert('RGB')), 1
 
     def __len__(self):
-        return len(self.images)
+        return len(self.paths)
 
 class WashInkDataset(torch.utils.data.Dataset):
-    def __init__(self, images, transform):
+    def __init__(self, paths, transform):
         super(WashInkDataset, self).__init__()
         self.transform = transform
-        self.images = list(map(transform, images))
+        self.paths = paths
 
     def __getitem__(self, index):
-        return self.images[index], 1
+        return self.transform(Image.open(self.paths[index]).convert('RGB')), 1
 
     def __len__(self):
-        return len(self.images)
+        return len(self.paths)
 
-def get_images(path):
-    images = []
-    for p in os.listdir(path):
-        if p.endswith(".webp"):
-            continue
-        p = os.path.join(path, p)
-        images.append(Image.open(p).convert('RGB'))
-    return images
+def get_images_paths(path):
+    return list(map(lambda p: os.path.join(path, p), filter(lambda p: not p.endswith(".webp"), os.listdir(path))))
 
 def get_loader(config):
     """Builds and returns Dataloader for photo and washink dataset."""
 
-    # photo_imgs = pickle.load(config.photo_path)
-    # print('Loaded pickle file 1')
-    # washink_imgs = pickle.load(config.washink_path)
-    # print('Loaded pickle files')
-
-    photo_imgs = get_images(config.photo_path)
-    washink_imgs = get_images(config.washink_path)
+    photo_imgs = get_images_paths(config.photo_path)
+    washink_imgs = get_images_paths(config.washink_path)
 
     transform = transforms.Compose([
         transforms.Resize(config.image_size),
@@ -58,7 +43,6 @@ def get_loader(config):
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    # transform = lambda x: x
 
     photo = PhotoDataset(photo_imgs, transform)
     washink = WashInkDataset(washink_imgs, transform)
