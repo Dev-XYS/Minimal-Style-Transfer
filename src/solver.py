@@ -234,9 +234,16 @@ class Solver(object):
         self.g21.load_state_dict(torch.load(os.path.join(self.model_path, 'g21.pkl'), map_location=torch.device('cpu')))
         self.g12.eval()
         self.g21.eval()
-        import IPython
-        IPython.embed()
         for i, (image, _) in enumerate(self.svhn_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
             fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))
             imageio.imsave(os.path.join(self.sample_path, f'{i}.png'), fake)
+
+    def gen_mobile_model(self):
+        self.g21.load_state_dict(torch.load(self.model_path, map_location=torch.device('cpu')))
+        self.g21.eval()
+        example = torch.rand(1, 3, 256, 256)
+        traced_script_module = torch.jit.trace(self.g21, example)
+        from torch.utils.mobile_optimizer import optimize_for_mobile
+        traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+        traced_script_module_optimized.save("g21.pt")

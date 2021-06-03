@@ -8,6 +8,11 @@ def str2bool(v):
     return v.lower() in ('true')
 
 def main(config):
+    if config.mode == 'gen_mobile_model':
+        solver = Solver(config, None, None)
+        solver.gen_mobile_model()
+        return
+
     svhn_loader, mnist_loader = get_loader(config)
     
     solver = Solver(config, svhn_loader, mnist_loader)
