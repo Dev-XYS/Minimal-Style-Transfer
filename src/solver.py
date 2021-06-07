@@ -12,6 +12,8 @@ from torch import optim
 from model import G12, G21
 from model import D1, D2
 
+from hed import *
+
 
 class Solver(object):
     def __init__(self, config, svhn_loader, mnist_loader):
@@ -21,6 +23,7 @@ class Solver(object):
         self.g21 = None
         self.d1 = None
         self.d2 = None
+        self.hed = None
         self.g_optimizer = None
         self.d_optimizer = None
         self.use_reconst_loss = config.use_reconst_loss
@@ -46,6 +49,7 @@ class Solver(object):
         self.g21 = G21(conv_dim=self.g_conv_dim)
         self.d1 = D1(conv_dim=self.d_conv_dim, use_labels=self.use_labels)
         self.d2 = D2(conv_dim=self.d_conv_dim, use_labels=self.use_labels)
+        self.hed = Hed()
         
         g_params = list(self.g12.parameters()) + list(self.g21.parameters())
         d_params = list(self.d1.parameters()) + list(self.d2.parameters())
@@ -58,6 +62,7 @@ class Solver(object):
             self.g21.cuda()
             self.d1.cuda()
             self.d2.cuda()
+            self.hed.cuda()
     
     def merge_images(self, sources, targets, k=10):
         _, _, h, w = sources.shape
@@ -172,7 +177,7 @@ class Solver(object):
                 g_loss = torch.mean((out-1)**2) 
 
             if self.use_reconst_loss:
-                g_loss += torch.mean((mnist - reconst_mnist)**2)
+                g_loss += 10.0 * torch.mean((mnist - reconst_mnist)**2)
 
             g_loss.backward()
             self.g_optimizer.step()
@@ -188,7 +193,11 @@ class Solver(object):
                 g_loss = torch.mean((out-1)**2) 
 
             if self.use_reconst_loss:
-                g_loss += torch.mean((svhn - reconst_svhn)**2)
+                g_loss += 10.0 * torch.mean((svhn - reconst_svhn)**2)
+
+            edge_real_A = F.sigmoid(self.hed(svhn).detach())
+            edge_fake_B = F.sigmoid(self.hed(fake_mnist))
+            g_loss += no_sigmoid_cross_entropy(edge_fake_B, edge_real_A) * 10.0
 
             g_loss.backward()
             self.g_optimizer.step()
@@ -230,9 +239,9 @@ class Solver(object):
                 torch.save(self.d2.state_dict(), d2_path)
 
     def sample(self):
-        self.g12.load_state_dict(torch.load(os.path.join(self.model_path, 'g12.pkl'), map_location=torch.device('cpu')))
-        self.g21.load_state_dict(torch.load(os.path.join(self.model_path, 'g21.pkl'), map_location=torch.device('cpu')))
-        self.g12.eval()
+        # self.g12.load_state_dict(torch.load(os.path.join(self.model_path, 'g12.pkl'), map_location=torch.device('cpu')))
+        self.g21.load_state_dict(torch.load(self.model_path, map_location=torch.device('cpu')))
+        # self.g12.eval()
         self.g21.eval()
         for i, (image, _) in enumerate(self.svhn_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))

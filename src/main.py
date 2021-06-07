@@ -43,7 +43,7 @@ if __name__ == '__main__':
     
     # training hyper-parameters
     parser.add_argument('--train_iters', type=int, default=40000)
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--beta1', type=float, default=0.5)
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--washink_path', type=str, default='/data/shareelectrons/washink1/horse/trainB')
     parser.add_argument('--log_step', type=int , default=10)
     parser.add_argument('--sample_step', type=int , default=100)
-    parser.add_argument('--sample_count', type=int , default=16)
+    parser.add_argument('--sample_count', type=int , default=64)
 
     config = parser.parse_args()
     print(config)
