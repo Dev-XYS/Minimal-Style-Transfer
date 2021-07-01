@@ -1,8 +1,11 @@
 import argparse
 import os
-from solver import Solver
+
 from torch.backends import cudnn
+
 from data_loader import get_loader
+from solver import Solver
+
 
 def str2bool(v):
     return v.lower() in ('true')
@@ -37,9 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--g_conv_dim', type=int, default=64)
     parser.add_argument('--d_conv_dim', type=int, default=64)
-    parser.add_argument('--use_reconst_loss', type=str2bool, default="True")
-    parser.add_argument('--use_labels', type=str2bool, default="False")
-    parser.add_argument('--num_classes', type=int, default=10)
     
     # training hyper-parameters
     parser.add_argument('--train_iters', type=int, default=40000)
@@ -48,13 +48,15 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--beta1', type=float, default=0.5)
     parser.add_argument('--beta2', type=float, default=0.999)
+    parser.add_argument('--rec_loss_weight', type=float, default=1.0)
+    parser.add_argument('--edge_loss_weight', type=float, default=1.0)
     
     # misc
     parser.add_argument('--mode', type=str, default='train')
-    parser.add_argument('--model_path', type=str, default='/output/models')
-    parser.add_argument('--sample_path', type=str, default='/output/samples')
-    parser.add_argument('--photo_path', type=str, default='/data/shareelectrons/washink1/horse/trainA')
-    parser.add_argument('--washink_path', type=str, default='/data/shareelectrons/washink1/horse/trainB')
+    parser.add_argument('--model_path', type=str, default='output/models')
+    parser.add_argument('--sample_path', type=str, default='output/samples')
+    parser.add_argument('--photo_path', type=str, default='data/horse/trainA')
+    parser.add_argument('--washink_path', type=str, default='data/horse/trainB')
     parser.add_argument('--log_step', type=int , default=10)
     parser.add_argument('--sample_step', type=int , default=100)
     parser.add_argument('--sample_count', type=int , default=64)

@@ -1,24 +1,22 @@
 import imageio
+import os
+import numpy as np
 import torch
 import torch.nn as nn
-import torchvision
-import os
-import pickle
-import scipy.io
-import numpy as np
+import torch.nn.functional as F
 
 from torch.autograd import Variable
 from torch import optim
+
+from hed import *
 from model import G12, G21
 from model import D1, D2
 
-from hed import *
-
 
 class Solver(object):
-    def __init__(self, config, svhn_loader, mnist_loader):
-        self.svhn_loader = svhn_loader
-        self.mnist_loader = mnist_loader
+    def __init__(self, config, photo_loader, washink_loader):
+        self.photo_loader = photo_loader
+        self.washink_loader = washink_loader
         self.g12 = None
         self.g21 = None
         self.d1 = None
@@ -26,9 +24,6 @@ class Solver(object):
         self.hed = None
         self.g_optimizer = None
         self.d_optimizer = None
-        self.use_reconst_loss = config.use_reconst_loss
-        self.use_labels = config.use_labels
-        self.num_classes = config.num_classes
         self.beta1 = config.beta1
         self.beta2 = config.beta2
         self.g_conv_dim = config.g_conv_dim
@@ -36,6 +31,8 @@ class Solver(object):
         self.train_iters = config.train_iters
         self.batch_size = config.batch_size
         self.lr = config.lr
+        self.rec_loss_weight = config.rec_loss_weight
+        self.edge_loss_weight = config.edge_loss_weight
         self.log_step = config.log_step
         self.sample_step = config.sample_step
         self.sample_path = config.sample_path
@@ -47,8 +44,8 @@ class Solver(object):
         """Builds a generator and a discriminator."""
         self.g12 = G12(conv_dim=self.g_conv_dim)
         self.g21 = G21(conv_dim=self.g_conv_dim)
-        self.d1 = D1(conv_dim=self.d_conv_dim, use_labels=self.use_labels)
-        self.d2 = D2(conv_dim=self.d_conv_dim, use_labels=self.use_labels)
+        self.d1 = D1(conv_dim=self.d_conv_dim)
+        self.d2 = D2(conv_dim=self.d_conv_dim)
         self.hed = Hed()
         
         g_params = list(self.g12.parameters()) + list(self.g21.parameters())
@@ -93,72 +90,51 @@ class Solver(object):
         self.d_optimizer.zero_grad()
 
     def train(self):
-        svhn_iter = iter(self.svhn_loader)
-        mnist_iter = iter(self.mnist_loader)
-        iter_per_epoch = min(len(svhn_iter), len(mnist_iter))
+        photo_iter = iter(self.photo_loader)
+        washink_iter = iter(self.washink_loader)
+        iter_per_epoch = min(len(photo_iter), len(washink_iter))
         
-        # fixed mnist and svhn for sampling
-        fixed_svhn = self.to_var(torch.cat([svhn_iter.next()[0] for _ in range(self.sample_count)]))
-        fixed_mnist = self.to_var(torch.cat([mnist_iter.next()[0] for _ in range(self.sample_count)]))
-        
-        # loss if use_labels = True
-        criterion = nn.CrossEntropyLoss()
+        # fixed washink and photo for sampling
+        fixed_photo = self.to_var(torch.cat([photo_iter.next()[0] for _ in range(self.sample_count)]))
+        fixed_washink = self.to_var(torch.cat([washink_iter.next()[0] for _ in range(self.sample_count)]))
         
         for step in range(self.train_iters+1):
             # reset data_iter for each epoch
             if step % iter_per_epoch == 0:
-                mnist_iter = iter(self.mnist_loader)
-                svhn_iter = iter(self.svhn_loader)
+                washink_iter = iter(self.washink_loader)
+                photo_iter = iter(self.photo_loader)
             
-            # load svhn and mnist dataset
-            svhn, s_labels = svhn_iter.next() 
-            svhn, s_labels = self.to_var(svhn), self.to_var(s_labels).long().squeeze()
-            mnist, m_labels = mnist_iter.next() 
-            mnist, m_labels = self.to_var(mnist), self.to_var(m_labels)
-
-            if self.use_labels:
-                mnist_fake_labels = self.to_var(
-                    torch.Tensor([self.num_classes]*svhn.size(0)).long())
-                svhn_fake_labels = self.to_var(
-                    torch.Tensor([self.num_classes]*mnist.size(0)).long())
+            # load photo and washink dataset
+            photo, p_labels = photo_iter.next() 
+            photo, p_labels = self.to_var(photo), self.to_var(p_labels).long().squeeze()
+            washink, w_labels = washink_iter.next() 
+            washink, w_labels = self.to_var(washink), self.to_var(w_labels)
             
             #============ train D ============#
             
             # train with real images
             self.reset_grad()
-            out = self.d1(mnist)
-            if self.use_labels:
-                d1_loss = criterion(out, m_labels)
-            else:
-                d1_loss = torch.mean((out-1)**2)
+            out = self.d1(washink)
+            d1_loss = torch.mean((out-1)**2)
             
-            out = self.d2(svhn)
-            if self.use_labels:
-                d2_loss = criterion(out, s_labels)
-            else:
-                d2_loss = torch.mean((out-1)**2)
+            out = self.d2(photo)
+            d2_loss = torch.mean((out-1)**2)
             
-            d_mnist_loss = d1_loss
-            d_svhn_loss = d2_loss
+            d_washink_loss = d1_loss
+            d_photo_loss = d2_loss
             d_real_loss = d1_loss + d2_loss
             d_real_loss.backward()
             self.d_optimizer.step()
             
             # train with fake images
             self.reset_grad()
-            fake_svhn = self.g12(mnist)
-            out = self.d2(fake_svhn)
-            if self.use_labels:
-                d2_loss = criterion(out, svhn_fake_labels)
-            else:
-                d2_loss = torch.mean(out**2)
+            fake_photo = self.g12(washink)
+            out = self.d2(fake_photo)
+            d2_loss = torch.mean(out**2)
             
-            fake_mnist = self.g21(svhn)
-            out = self.d1(fake_mnist)
-            if self.use_labels:
-                d1_loss = criterion(out, mnist_fake_labels)
-            else:
-                d1_loss = torch.mean(out**2)
+            fake_washink = self.g21(photo)
+            out = self.d1(fake_washink)
+            d1_loss = torch.mean(out**2)
             
             d_fake_loss = d1_loss + d2_loss
             d_fake_loss.backward()
@@ -166,64 +142,58 @@ class Solver(object):
             
             #============ train G ============#
             
-            # train mnist-svhn-mnist cycle
+            # train washink-photo-washink cycle
             self.reset_grad()
-            fake_svhn = self.g12(mnist)
-            out = self.d2(fake_svhn)
-            reconst_mnist = self.g21(fake_svhn)
-            if self.use_labels:
-                g_loss = criterion(out, m_labels) 
-            else:
-                g_loss = torch.mean((out-1)**2) 
+            fake_photo = self.g12(washink)
+            out = self.d2(fake_photo)
+            reconst_washink = self.g21(fake_photo)
+            g_loss = torch.mean((out-1)**2)
 
-            if self.use_reconst_loss:
-                g_loss += 10.0 * torch.mean((mnist - reconst_mnist)**2)
+            # reconstruction loss
+            g_loss += self.rec_loss_weight * torch.mean((washink - reconst_washink)**2)
 
             g_loss.backward()
             self.g_optimizer.step()
 
-            # train svhn-mnist-svhn cycle
+            # train photo-washink-photo cycle
             self.reset_grad()
-            fake_mnist = self.g21(svhn)
-            out = self.d1(fake_mnist)
-            reconst_svhn = self.g12(fake_mnist)
-            if self.use_labels:
-                g_loss = criterion(out, s_labels) 
-            else:
-                g_loss = torch.mean((out-1)**2) 
+            fake_washink = self.g21(photo)
+            out = self.d1(fake_washink)
+            reconst_photo = self.g12(fake_washink)
+            g_loss = torch.mean((out-1)**2)
 
-            if self.use_reconst_loss:
-                g_loss += 10.0 * torch.mean((svhn - reconst_svhn)**2)
+            # reconstruction loss
+            g_loss += self.rec_loss_weight * torch.mean((photo - reconst_photo)**2)
 
-            edge_real_A = F.sigmoid(self.hed(svhn).detach())
-            edge_fake_B = F.sigmoid(self.hed(fake_mnist))
-            g_loss += no_sigmoid_cross_entropy(edge_fake_B, edge_real_A) * 10.0
+            edge_real_A = torch.sigmoid(self.hed(photo).detach())
+            edge_fake_B = torch.sigmoid(self.hed(fake_washink))
+            g_loss += no_sigmoid_cross_entropy(edge_fake_B, edge_real_A) * self.edge_loss_weight
 
             g_loss.backward()
             self.g_optimizer.step()
             
             # print the log info
             if (step+1) % self.log_step == 0:
-                print('Step [%d/%d], d_real_loss: %.4f, d_mnist_loss: %.4f, d_svhn_loss: %.4f, '
-                      'd_fake_loss: %.4f, g_loss: %.4f' 
-                      %(step+1, self.train_iters, d_real_loss.data.item(), d_mnist_loss.data.item(), 
-                        d_svhn_loss.item(), d_fake_loss.item(), g_loss.item()))
+                print('Step [%d/%d], d_real_loss: %.4f, d_washink_loss: %.4f, d_photo_loss: %.4f, '
+                      'd_fake_loss: %.4f, g_loss: %.4f'
+                      % (step+1, self.train_iters, d_real_loss.data.item(), d_washink_loss.data.item(), 
+                        d_photo_loss.item(), d_fake_loss.item(), g_loss.item()))
 
             # save the sampled images
             if (step+1) % self.sample_step == 0:
-                fake_svhn = self.g12(fixed_mnist)
-                fake_mnist = self.g21(fixed_svhn)
+                fake_photo = self.g12(fixed_washink)
+                fake_washink = self.g21(fixed_photo)
                 
-                mnist, fake_mnist = self.to_data(fixed_mnist), self.to_data(fake_mnist)
-                svhn , fake_svhn = self.to_data(fixed_svhn), self.to_data(fake_svhn)
+                washink, fake_washink = self.to_data(fixed_washink), self.to_data(fake_washink)
+                photo, fake_photo = self.to_data(fixed_photo), self.to_data(fake_photo)
                 
-                merged = self.merge_images(mnist, fake_svhn)
-                path = os.path.join(self.sample_path, 'sample-%d-m-s.png' %(step+1))
+                merged = self.merge_images(washink, fake_photo)
+                path = os.path.join(self.sample_path, 'sample-%d-w-p.png' %(step+1))
                 imageio.imsave(path, merged)
                 print ('saved %s' %path)
                 
-                merged = self.merge_images(svhn, fake_mnist)
-                path = os.path.join(self.sample_path, 'sample-%d-s-m.png' %(step+1))
+                merged = self.merge_images(photo, fake_washink)
+                path = os.path.join(self.sample_path, 'sample-%d-p-w.png' %(step+1))
                 imageio.imsave(path, merged)
                 print ('saved %s' %path)
             
@@ -239,11 +209,9 @@ class Solver(object):
                 torch.save(self.d2.state_dict(), d2_path)
 
     def sample(self):
-        # self.g12.load_state_dict(torch.load(os.path.join(self.model_path, 'g12.pkl'), map_location=torch.device('cpu')))
         self.g21.load_state_dict(torch.load(self.model_path, map_location=torch.device('cpu')))
-        # self.g12.eval()
         self.g21.eval()
-        for i, (image, _) in enumerate(self.svhn_loader):
+        for i, (image, _) in enumerate(self.photo_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
             fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))
             imageio.imsave(os.path.join(self.sample_path, f'{i}.png'), fake)

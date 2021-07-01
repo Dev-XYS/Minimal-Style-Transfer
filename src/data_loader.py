@@ -1,8 +1,9 @@
-import numpy as np
 import os
 import torch
+
 from PIL import Image
 from torchvision import transforms
+
 
 class PhotoDataset(torch.utils.data.Dataset):
     def __init__(self, paths, transform):
@@ -46,7 +47,6 @@ def get_loader(config):
 
     photo = PhotoDataset(photo_imgs, transform)
     washink = WashInkDataset(washink_imgs, transform)
-    print('Initialized datasets')
 
     photo_loader = torch.utils.data.DataLoader(dataset=photo,
                                               batch_size=config.batch_size,
@@ -57,5 +57,5 @@ def get_loader(config):
                                                batch_size=config.batch_size,
                                                shuffle=True,
                                                num_workers=config.num_workers)
-    print('Initialized dataloaders')
+
     return photo_loader, washink_loader

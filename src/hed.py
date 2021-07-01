@@ -1,12 +1,7 @@
-import os
-import sys
+# This file is adapted from ChipGAN.
+
 import torch
-from torch.autograd import Variable
-import shutil
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import numpy as np
 import torchvision.models as models
 
 
@@ -36,7 +31,6 @@ class Hed(nn.Module):
         res = []
         for l in self.vgg16:
             x = l(x)
-            # print(cnt)
             if cnt == 4:
                 y = self.score_dsn1(x)
                 res += [y]
@@ -61,7 +55,6 @@ class Hed(nn.Module):
         return res
 
 def no_sigmoid_cross_entropy(sig_logits, label):
-    # print(sig_logits)
     count_neg = torch.sum(1.-label)
     count_pos = torch.sum(label)
 
