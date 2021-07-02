@@ -1,6 +1,7 @@
+import cv2
 import imageio
-import os
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -165,6 +166,7 @@ class Solver(object):
             # reconstruction loss
             g_loss += self.rec_loss_weight * torch.mean((photo - reconst_photo)**2)
 
+            # edge loss
             edge_real_A = torch.sigmoid(self.hed(photo).detach())
             edge_fake_B = torch.sigmoid(self.hed(fake_washink))
             g_loss += no_sigmoid_cross_entropy(edge_fake_B, edge_real_A) * self.edge_loss_weight
@@ -214,6 +216,7 @@ class Solver(object):
         for i, (image, _) in enumerate(self.photo_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
             fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))
+            # fake = cv2.bilateralFilter(fake, 3, sigmaSpace = 75, sigmaColor =75)
             imageio.imsave(os.path.join(self.sample_path, f'{i}.png'), fake)
 
     def gen_mobile_model(self):
