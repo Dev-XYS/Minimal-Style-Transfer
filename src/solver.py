@@ -216,7 +216,7 @@ class Solver(object):
         for i, (image, _) in enumerate(self.photo_loader):
             imageio.imsave(os.path.join(self.sample_path, f'{i}_photo.png'), np.transpose(image[0], (1, 2, 0)))
             fake = np.transpose(self.to_data(self.g21(image))[0], (1, 2, 0))
-            # fake = cv2.bilateralFilter(fake, 3, sigmaSpace = 75, sigmaColor =75)
+            fake = cv2.bilateralFilter(fake, 3, sigmaSpace = 75, sigmaColor =75)
             imageio.imsave(os.path.join(self.sample_path, f'{i}.png'), fake)
 
     def gen_mobile_model(self):
